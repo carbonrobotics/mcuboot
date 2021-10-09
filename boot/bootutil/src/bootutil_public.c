@@ -48,6 +48,7 @@
 #include "bootutil/bootutil_log.h"
 #ifdef MCUBOOT_ENC_IMAGES
 #include "bootutil/enc_key_public.h"
+#include "bootutil/enc_key.h"
 #endif
 
 #ifdef CONFIG_MCUBOOT
@@ -62,6 +63,8 @@ const uint32_t boot_img_magic[] = {
     0x0f505235,
     0x8079b62c,
 };
+
+static uint32_t magic_write_buf[BOOT_MAX_ALIGN / 4];
 
 #define BOOT_MAGIC_ARR_SZ \
     (sizeof boot_img_magic / sizeof boot_img_magic[0])
@@ -144,7 +147,7 @@ boot_magic_off(const struct flash_area *fap)
 static inline uint32_t
 boot_image_ok_off(const struct flash_area *fap)
 {
-    return boot_magic_off(fap) - BOOT_MAX_ALIGN;
+    return (boot_magic_off(fap) - BOOT_MAX_ALIGN) & ~(BOOT_MAX_ALIGN - 1);
 }
 
 static inline uint32_t
@@ -197,9 +200,9 @@ boot_enc_key_off(const struct flash_area *fap, uint8_t slot)
 {
 #if MCUBOOT_SWAP_SAVE_ENCTLV
     return boot_swap_size_off(fap) - ((slot + 1) *
-            ((((BOOT_ENC_TLV_SIZE - 1) / BOOT_MAX_ALIGN) + 1) * BOOT_MAX_ALIGN));
+            BOOT_ENC_TLV_ALIGN_SIZE);
 #else
-    return boot_swap_size_off(fap) - ((slot + 1) * BOOT_ENC_KEY_SIZE);
+    return boot_swap_size_off(fap) - ((slot + 1) * BOOT_ENC_KEY_ALIGN_SIZE);
 #endif
 }
 #endif
@@ -314,6 +317,7 @@ int
 boot_write_magic(const struct flash_area *fap)
 {
     uint32_t off;
+    uint32_t buf_off = BOOT_MAX_ALIGN > BOOT_MAGIC_SZ ? BOOT_MAX_ALIGN - BOOT_MAGIC_SZ : 0;
     int rc;
 
     off = boot_magic_off(fap);
@@ -321,7 +325,13 @@ boot_write_magic(const struct flash_area *fap)
     BOOT_LOG_DBG("writing magic; fa_id=%d off=0x%lx (0x%lx)",
                  fap->fa_id, (unsigned long)off,
                  (unsigned long)(fap->fa_off + off));
-    rc = flash_area_write(fap, off, boot_img_magic, BOOT_MAGIC_SZ);
+    if (buf_off > 0){
+        memset((uint8_t*)magic_write_buf, 0xFF, buf_off);
+        memcpy((uint8_t*)magic_write_buf + buf_off, boot_img_magic, BOOT_MAGIC_SZ);
+        rc = flash_area_write(fap, off - buf_off, (uint8_t*)magic_write_buf, BOOT_MAX_ALIGN);
+    } else {
+        rc = flash_area_write(fap, off, boot_img_magic, BOOT_MAGIC_SZ);
+    }
     if (rc != 0) {
         return BOOT_EFLASH;
     }
