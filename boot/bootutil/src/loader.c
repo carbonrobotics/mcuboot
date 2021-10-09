@@ -813,7 +813,8 @@ boot_copy_region(struct boot_loader_state *state,
     uint8_t image_index;
 #endif
 
-    TARGET_STATIC uint8_t buf[1024];
+    TARGET_STATIC uint32_t _buf[1024 / sizeof(uint32_t)];
+    TARGET_STATIC uint8_t* buf = (uint8_t*)_buf;
 
 #if !defined(MCUBOOT_ENC_IMAGES)
     (void)state;
@@ -821,8 +822,8 @@ boot_copy_region(struct boot_loader_state *state,
 
     bytes_copied = 0;
     while (bytes_copied < sz) {
-        if (sz - bytes_copied > sizeof buf) {
-            chunk_sz = sizeof buf;
+        if (sz - bytes_copied > sizeof _buf) {
+            chunk_sz = sizeof _buf;
         } else {
             chunk_sz = sz - bytes_copied;
         }
