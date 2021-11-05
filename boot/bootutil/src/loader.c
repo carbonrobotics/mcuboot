@@ -2059,7 +2059,8 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
             break;
 
         default:
-            BOOT_SWAP_TYPE(state) = BOOT_SWAP_TYPE_PANIC;
+            BOOT_SWAP_TYPE(state) = BOOT_SWAP_TYPE_NONE; // Carbon Robotics
+            break;
         }
 
         if (BOOT_SWAP_TYPE(state) == BOOT_SWAP_TYPE_PANIC) {
