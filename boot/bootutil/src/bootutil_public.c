@@ -56,8 +56,8 @@ BOOT_LOG_MODULE_DECLARE(mcuboot);
 BOOT_LOG_MODULE_REGISTER(mcuboot_util);
 #endif
 
-#if BOOT_MAX_ALIGN == 8
 const union boot_img_magic_t boot_img_magic = {
+    .align = BOOT_MAX_ALIGN,
     .val = {
         0x77, 0xc2, 0x95, 0xf3,
         0x60, 0xd2, 0xef, 0x7f,
@@ -65,17 +65,6 @@ const union boot_img_magic_t boot_img_magic = {
         0x2c, 0xb6, 0x79, 0x80
     }
 };
-#else
-const union boot_img_magic_t boot_img_magic = {
-    .align = BOOT_MAX_ALIGN,
-    .magic = {
-        0x2d, 0xe1,
-        0x5d, 0x29, 0x41, 0x0b,
-        0x8d, 0x77, 0x67, 0x9c,
-        0x11, 0x0f, 0x1f, 0x8a
-    }
-};
-#endif
 
 struct boot_swap_table {
     uint8_t magic_primary_slot;
